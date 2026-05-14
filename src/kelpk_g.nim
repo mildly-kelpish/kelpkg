@@ -1,5 +1,5 @@
-let version: string = "0.1.0"
-import commandant, strformat, std/os, parsetoml, std/httpclient, std/strutils, std/sequtils  
+const version: string = "0.1.0"
+import commandant, strformat, std/os, parsetoml, std/httpclient, std/strutils, std/sequtils, std/envvars
 proc helpMessage(): string =
   result = """
   kelpkg user package manager
@@ -17,7 +17,7 @@ commandline:
     argument(package, string)
   flag(lissst, "list", "l")
   subcommand delete, "delete", "d":
-    argument(pckage, string) # nim extension got mad at me for declaring a variable thrice so guess il have to do with this
+    argument(pckage, string) # nim got mad at me for declaring a variable thrice so guess il have to do with this
     flag(force, "force", "f")
   subcommand installocal, "locinstall", "o":
     argument(packge, string)
@@ -53,20 +53,25 @@ if install:
     if confirmation == "y":
       discard execShellCmd(fmt"git clone {pbis} /tmp/{package}")  
       discard execShellCmd(fmt"cd /tmp/{package} && {pbib}")
-      if dirExists(defaultpat):
-        echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
-      else:
-        discard execShellCmd(fmt"mkdir {defaultpat}")
-        echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
-      discard execShellCmd(fmt"mv /tmp/{package}/{pbin} ~/.kelpkg/{package}")
-      echo(fmt"{package} installed to ~/.kelpkg/{package}")
+      if existsEnv("KPDIR"):
+        ## ! kpdir stuff here !
+        defaultpat = getEnv("KPDIR")
+      else:  
+        if dirExists(defaultpat):
+          echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
+          
+        else:
+          discard execShellCmd(fmt"mkdir {defaultpat}")
+          echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
+      discard execShellCmd(fmt"mv /tmp/{package}/{pbin} {defaultpat}{package}")
+      echo(fmt"{package} installed to {defaultpat}/{package}")
         
       if dirExists(defaultpah):
         echo("config dir exists, writing to package list...")
       else:
         discard execShellCmd(fmt"mkdir {defaultpah}")
       if fileExists(fmt"{defaultpah}/packagelist"):
-        #!package list writing here here!
+        ## ! package list writing here !
         let unsplit = readFile(fmt"{defaultpah}/packagelist")
         var splilt = splitlines(unsplit)
         splilt.insert(fmt"{package}-{pbiv}", 0)
@@ -117,13 +122,16 @@ if delete:
   var defaultpah = expandTilde("~/.config/kelpkg")
   var defaultpat = expandTilde("~/.kelpkg") 
   if force:
+    if existsEnv("KPDIR"):
+      defaultpat = getEnv("KPDIR")    
     echo("force passed, deleting package without modifying packagelist")
     removeFile(fmt"{defaultpat}/{pckage}")
   else:  
     echo(fmt"would you like to delete {pckage} (y\n) >")
     var confirmation = readline(stdin)
     if confirmation == "y":
-
+      if existsEnv("KPDIR"):
+        defaultpat = getEnv("KPDIR")      
       if dirExists(defaultpah):
         echo("config dir exists, reading package list...")
 
@@ -189,13 +197,17 @@ if update:
               if pbiv > verison:
                 discard execShellCmd(fmt"git clone {pbis} /tmp/{tempest}")  
                 discard execShellCmd(fmt"cd /tmp/{tempest} && {pbib}")
-                if dirExists(defaultpat):
-                  echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
-                else:
-                  discard execShellCmd(fmt"mkdir {defaultpat}")
-                  echo("i reccommend adding /home/{user}/.kelpkg/ to PATH ")
-                discard execShellCmd(fmt"mv /tmp/{tempest}/{pbin} ~/.kelpkg/{tempest}")
-                echo(fmt"{package} installed to ~/.kelpkg/{package}")
+                if existsEnv("KPDIR"):
+                  echo("install to kpdir env")
+                  defaultpat = getEnv("KPDIR")
+                else:  
+                  if dirExists(defaultpat):
+                    echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
+                  else:
+                    discard execShellCmd(fmt"mkdir {defaultpat}")
+                    echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
+                discard execShellCmd(fmt"mv /tmp/{tempest}/{pbin} {defaultpat}{tempest}")
+                echo(fmt"{tempest} installed to {defaultpat}/{tempest}")
         
                 if dirExists(defaultpah):
                   echo("config dir exists, writing to package list...")
@@ -243,13 +255,17 @@ if installocal:
   if confirmation == "y":
     discard execShellCmd(fmt"git clone {pbis} /tmp/{pbina}")  
     discard execShellCmd(fmt"cd /tmp/{pbina} && {pbib}")
-    if dirExists(defaultpat):
-      echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
-    else:
-      discard execShellCmd(fmt"mkdir {defaultpat}")
-      echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
-    discard execShellCmd(fmt"mv /tmp/{pbina}/{pbin} ~/.kelpkg/{pbina}")
-    echo(fmt"{pbina} installed to ~/.kelpkg/{pbina}")
+    if existsEnv("KPDIR"):
+        echo("install to kpdir env")
+        defaultpat = getEnv("KPDIR")
+    else:  
+        if dirExists(defaultpat):
+          echo("default install dir exists and 'KPDIR' is not defined, moving binary...")
+        else:
+          discard execShellCmd(fmt"mkdir {defaultpat}")
+          echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
+    discard execShellCmd(fmt"mv /tmp/{pbina}/{pbin} {defaultpat}{pbina}")
+    echo(fmt"{pbina} installed to {defaultpat}/{pbina}")
       
     if dirExists(defaultpah):
       echo("config dir exists, writing to package list...")
