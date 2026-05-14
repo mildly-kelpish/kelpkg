@@ -16,6 +16,9 @@ anyway heres the commands
 `--locinstall / -o | installs a package from a file (remember to put your file extensions in!)`<br>
 `--update / -u | updates / installs all packages within your packagelist`<br>
 
+
+also note that there are only things packaged for linux in the main repo!
+
 ## installation
 - a prebuilt binary for Linux x86_64 can be found in the releases tab
 
