@@ -31,7 +31,7 @@ echo("note: dependencies are NOT handled by kelpkg")
 
 #better gaps between segments mean better readable code
 
-
+# maybe add the ability to have other repos? i dont know how though everything ive tried has failed
 
 
 
