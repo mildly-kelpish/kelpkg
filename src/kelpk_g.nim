@@ -1,4 +1,4 @@
-const version: string = "0.1.0"
+const version: string = "0.1.1"
 import commandant, strformat, std/os, parsetoml, std/httpclient, std/strutils, std/sequtils, std/envvars
 proc helpMessage(): string =
   result = """
