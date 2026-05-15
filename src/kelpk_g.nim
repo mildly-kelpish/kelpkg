@@ -63,7 +63,7 @@ if install:
         else:
           discard execShellCmd(fmt"mkdir {defaultpat}")
           echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
-      discard execShellCmd(fmt"mv /tmp/{package}/{pbin} {defaultpat}{package}")
+      discard execShellCmd(fmt"mv /tmp/{package}/{pbin} {defaultpat}/{package}")
       echo(fmt"{package} installed to {defaultpat}/{package}")
         
       if dirExists(defaultpah):
@@ -206,7 +206,7 @@ if update:
                   else:
                     discard execShellCmd(fmt"mkdir {defaultpat}")
                     echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
-                discard execShellCmd(fmt"mv /tmp/{tempest}/{pbin} {defaultpat}{tempest}")
+                discard execShellCmd(fmt"mv /tmp/{tempest}/{pbin} {defaultpat}/{tempest}")
                 echo(fmt"{tempest} installed to {defaultpat}/{tempest}")
         
                 if dirExists(defaultpah):
@@ -264,7 +264,7 @@ if installocal:
         else:
           discard execShellCmd(fmt"mkdir {defaultpat}")
           echo("i reccommend adding /home/{user}/.kelpkg/ to PATH OR setting the environment variable 'KPDIR' to a different path\nthat is also on your PATH, that can also be written to without sudo")
-    discard execShellCmd(fmt"mv /tmp/{pbina}/{pbin} {defaultpat}{pbina}")
+    discard execShellCmd(fmt"mv /tmp/{pbina}/{pbin} {defaultpat}/{pbina}")
     echo(fmt"{pbina} installed to {defaultpat}/{pbina}")
       
     if dirExists(defaultpah):
