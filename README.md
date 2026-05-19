@@ -1,7 +1,8 @@
 
 <h2 align="center"><b>kelpkg</b><br></h2>
 
-Kelpkg (or kpkg) is a fairly simple package manager i made in about 7 hours. main "unique" feature about it is that it writes down every package you have to a file (~/.config/kelpkg/packagelist). the main repo can be found at  https://github.com/mildly-kelpish/kelpkg-repo-main
+Kelpkg (or kpkg) is a fairly simple package manager i made in about 7 hours. main "unique" feature about it is that it writes down every package you have to a file (~/.config/kelpkg/packagelist). the main repo can be found at  https://github.com/mildly-kelpish/kelpkg-repo-main  
+currently being rewritten in d
 
 ---
 ## usage
