@@ -12,7 +12,7 @@ import std.range;
 
 TOMLDocument PBI;
 string conteent;
-
+// 「「知らず」を知らず」を知らず 
 void main(string[] argv)
 {
 	int exit = 0;
@@ -125,6 +125,7 @@ void main(string[] argv)
 				run(format("cd /tmp && wget %s", strip(src, "\u0022")));
 				run(format("cd /tmp && tar -xvzf %s", strip(cmmd, "\u0022"))); // todo: add support for tar.xz as well
 				finalcmd = tryRun(format("mv /tmp/%s /usr/local/bin/", strip(finalbinal, "\u0022")));
+				break;
 				
 			case 2:
 				writeln(format("temp"));
@@ -156,5 +157,166 @@ void main(string[] argv)
 		}
 
 	}
+	if (args.hasFlag("list")) {
+		if (exists("/etc/kpkg/packagelist")) {
+			writeln(readText("/etc/kpkg/packagelist")); //somehow, this takes slightly less lines of code than the nim version
+		}
+		else {
+			cwriteln("packagelist does not exist which means you dont have any packages!".color(fg.red));
+		}
+	}
+	if (args.hasFlag("locinstall"))
 
+	{
+
+		string packag = args.argument("package");
+
+		PBI = parseTOML(packag);
+		writeln(format("installing %s", [
+					PBI["meta"]["name"], PBI["meta"]["version"]
+				]));
+		string suudooo = runCollect("id -u");
+		if (strip(suudooo) == "0")
+		{
+			writeln("wow!"); // i really need a better way to do this...
+		}
+		else
+		{
+			cwriteln("Not running as root! package will not be installed!".color(fg.red));
+			exit = 1;
+		}
+
+		if (args.hasFlag("ask"))
+		{
+			asking = userInput("proceed with program installation? (y/n)");
+			switch (asking)
+			{
+
+			case "n":
+				cwriteln("canceling installation".color(fg.red)); //fancy!
+				exit = 1;
+				break;
+			case "no":
+				cwriteln("canceling installation".color(fg.red));
+				exit = 1;
+				break;
+			case "yes":
+				cwriteln("continuing installation".color(fg.green));
+				break;
+			case "y":
+				cwriteln("continuing installation".color(fg.green));
+				break;
+			default:
+				cwriteln("response not y or n, canceling installation".color(fg.red));
+				exit = 1;
+				break;
+			}
+		}
+		if (exit == 1)
+		{
+			writeln("bye!");
+		}
+		else
+		{
+			auto defaultpath = environment.get("KPDIR", "/usr/local/bin"); 
+			cwriteln("cloning package...".color(fg.yellow));
+			string src = PBI["package"]["source"].toString();
+			string pkgn = PBI["meta"]["name"].toString();
+			tryRemovePath("/tmp/kpkg");
+			int pkgt = cast(int) PBI["meta"]["pkgt"].integer; 
+			int finalcmd;
+			string cmmd = PBI["package"]["command"].toString();
+			string finalbinal = PBI["package"]["finbin"].toString();
+			switch (pkgt)
+			{
+			case 0:
+
+				run(format("git clone %s /tmp/kpkg", strip(src, "\u0022")));
+				run(format("cd /tmp/kpkg && %s ", strip(cmmd, "\u0022")));
+				finalcmd = tryRun(format("mv /tmp/kpkg/%s /usr/local/bin/%s", strip(finalbinal, "\u0022"), strip(
+						pkgn, "\u0022")));
+				tryRemovePath("/tmp/kpkg"); 
+
+				break;
+			case 1:
+				run(format("cd /tmp && wget %s", strip(src, "\u0022")));
+				run(format("cd /tmp && tar -xvzf %s", strip(cmmd, "\u0022"))); 
+				finalcmd = tryRun(format("mv /tmp/%s /usr/local/bin/", strip(finalbinal, "\u0022"))); // need to figure out a way to get this to work for packages with multiple binaries...
+				break;
+				
+			case 2:
+				writeln(format("temp"));
+				break;
+			case 3:
+				writeln(format("temp"));
+				break;
+			case 4:
+				run(strip(cmmd, "\u0022"));
+				break;
+			case 5:
+				cwriteln("the package is broken and will not be installed".color(fg.red));
+				break;
+			default:
+				cwriteln("invalid package type".color(fg.red));
+				break;
+
+			}
+
+			if (finalcmd == 0)
+			{
+				cwriteln("program installed succesfully!".color(fg.green));
+			}
+			else
+			{
+				cwriteln("Program installation failed!".color(fg.red));
+			}
+
+		}
+	}
+	if (args.hasFlag("remove")) {
+		string packoge = args.argument("package");
+		string suudooo = runCollect("id -u");
+		if (strip(suudooo) == "0")
+		{
+			writeln("wow!"); // i really need a better way to do this...
+		}
+		else
+		{
+			cwriteln("Not running as root! package will not be installed!".color(fg.red));
+			exit = 1;
+		}
+		if (args.hasFlag("ask"))
+		{
+			asking = userInput("proceed with program removal? (y/n)");
+			switch (asking)
+			{
+
+			case "n":
+				cwriteln("canceling installation".color(fg.red)); 
+				exit = 1;
+				break;
+			case "no":
+				cwriteln("canceling installation".color(fg.red));
+				exit = 1;
+				break;
+			case "yes":
+				cwriteln("continuing installation".color(fg.green));
+				break;
+			case "y":
+				cwriteln("continuing installation".color(fg.green));
+				break;
+			default:
+				cwriteln("response not y or n, canceling installation".color(fg.red));
+				exit = 1;
+				break;
+			}
+		}	
+		if (exit == 1) {
+			cwriteln("exiting...");
+		} else {
+		tryRemove(format("/usr/local/bin/%s", strip(packoge, "\u0022")));
+		cwriteln("program removed succesfully!".color(fg.green)); // line 244
+		}
+
+	}
 }
