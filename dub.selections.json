@@ -1,0 +1,14 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"automem": "0.6.11",
+		"cachetools": "0.4.2",
+		"cmd": "0.3.1",
+		"colorize": "1.0.5",
+		"requests": "2.2.1",
+		"scriptlike": "0.10.3",
+		"test_allocator": "0.3.4",
+		"toml": "2.0.1",
+		"unit-threaded": "2.2.4"
+	}
+}
