@@ -15,7 +15,7 @@ anyway heres the commands
 `--list / -l | lists packagelist (see config)`<br>
 `--delete / -d |  deletes package (provided as argument)`<br>
 `--locinstall / -o | installs a package from a file (remember to put your file extensions in!)`<br>
-`--update / -u | updates / installs all packages within your packagelist`<br>
+`--update / -u | not currently implemented`<br>
 
 
 also note that there are only things packaged for linux in the main repo!
