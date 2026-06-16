@@ -9,10 +9,26 @@ import toml;
 import std.process;
 import std.conv;
 import std.range;
+import std.algorithm;
+import std.file;
 
 TOMLDocument PBI;
+TOMLDocument PBIB;
 string conteent;
-// 「「知らず」を知らず」を知らず 
+string[] repochoice;
+string[] repoconch;
+string uprepo;
+string src;
+string pkgn;
+int finalcmd;
+int pkgt;
+float pkgv;
+string cmmd;
+string finalbinal;
+// * 「「知らず」を知らず」を知らず 
+
+
+
 void main(string[] argv)
 {
 	int exit = 0;
@@ -23,33 +39,37 @@ void main(string[] argv)
 		.versionOption("--version", "show version")
 		.helpOption("-h, --help", "show help message(s)")
 		.option("-i, --install", "install a package")
-		.option("-u, --remove", "remove / uninstall a package")
+		.option("-r, --remove", "remove / uninstall a package")
 		.option("-l, --list", "list packages within packagelist")
 		.option("-o, --locinstall", "install a package from a .kpkg.toml file")
-		.option("-a, --ask", "ask when installing/removing packages")
+		.option("-a, --ask", "ask when doing things")
+		.option("-u, --update", "update packages within packagelist")
 		.argument("[package]", "Package to install/remove")
 		.parse(argv);
 	if (args.hasFlag("install"))
 
 	{
-		if (exists("/etc/kpkg/repos"))
+		if (scriptlike.file.exists("/etc/kpkg/repos"))
 		{
 			auto repos = File("/etc/kpkg/repos");
-			auto repolist = repos.byLine(); //todo: make repo selection more user friendly and make sure responses are valid
+			auto repolist = repos.byLine(); // # todo DONE!
 			string packag = args.argument("package");
 			foreach (line; repolist)
 			{
-				writeln(line);
-				conteent = getContent(
-					format(
-						line, packag))
-					.toString();
+				conteent = getContent(format(line, "meta")).toString();
+				PBIB = parseTOML(conteent);
+				string packagefound = PBIB["provides"].toString();
+				if (canFind(packagefound, packag)) {
+					repoconch ~= PBIB["url"].toString();
+					repochoice ~= PBIB["rname"].toString();
+				}
+				
 			}
+			int repopo = menu!int("which repo do you wish to use?", repochoice);
 
-			PBI = parseTOML(conteent);
-			writeln(format("installing %s", [
-						PBI["meta"]["name"], PBI["meta"]["version"]
-					]));
+			string urlrl = repoconch[repopo - 1];
+			PBI = parseTOML(getContent(format(strip(urlrl, "\u0022"), packag)).toString());
+			writeln(format("installing %s", PBI["meta"]["name"].toString()));
 		}
 		else
 		{
@@ -99,16 +119,15 @@ void main(string[] argv)
 		}
 		else
 		{
-			//writing the main of the installation command in an else! wow!
-			auto defaultpath = environment.get("KPDIR", "/usr/local/bin"); //local bin for distroless, normal bin otherwise
+			//writing the main of the installation command in an else! wow! 
 			cwriteln("cloning package...".color(fg.yellow));
-			string src = PBI["package"]["source"].toString();
-			string pkgn = PBI["meta"]["name"].toString();
+			src = PBI["package"]["source"].toString();
+			pkgn = PBI["meta"]["name"].toString();
 			tryRemovePath("/tmp/kpkg");
-			int pkgt = cast(int) PBI["meta"]["pkgt"].integer; // for some reason, it defaults to a long
-			int finalcmd;
-			string cmmd = PBI["package"]["command"].toString();
-			string finalbinal = PBI["package"]["finbin"].toString();
+			pkgt = cast(int) PBI["meta"]["pkgt"].integer; // for some reason, it defaults to a long
+			pkgv = PBI["meta"]["version"].floating;
+			cmmd = PBI["package"]["command"].toString();
+			finalbinal = PBI["package"]["finbin"].toString();
 			switch (pkgt)
 			{
 			case 0:
@@ -126,17 +145,10 @@ void main(string[] argv)
 				run(format("cd /tmp && tar -xvzf %s", strip(cmmd, "\u0022"))); // todo: add support for tar.xz as well
 				finalcmd = tryRun(format("mv /tmp/%s /usr/local/bin/", strip(finalbinal, "\u0022")));
 				break;
-				
 			case 2:
-				writeln(format("temp"));
-				break;
-			case 3:
-				writeln(format("temp"));
-				break;
-			case 4:
 				run(strip(cmmd, "\u0022"));
 				break;
-			case 5:
+			case 3: //i  no longer plan to handle libraries because i dont know how to
 				cwriteln("the package is broken and will not be installed".color(fg.red));
 				break;
 			default:
@@ -148,6 +160,8 @@ void main(string[] argv)
 			if (finalcmd == 0)
 			{
 				cwriteln("program installed succesfully!".color(fg.green));
+				File packlist = File("/etc/kpkg/packagelist", "a+");
+				packlist.writeln(format("%s-%s", strip(pkgn, "\u0022"), pkgv));
 			}
 			else
 			{
@@ -158,8 +172,8 @@ void main(string[] argv)
 
 	}
 	if (args.hasFlag("list")) {
-		if (exists("/etc/kpkg/packagelist")) {
-			writeln(readText("/etc/kpkg/packagelist")); //somehow, this takes slightly less lines of code than the nim version
+		if (scriptlike.file.exists("/etc/kpkg/packagelist")) {
+			writeln(scriptlike.file.readText("/etc/kpkg/packagelist")); //somehow, this takes slightly less lines of code than the nim version
 		}
 		else {
 			cwriteln("packagelist does not exist which means you dont have any packages!".color(fg.red));
@@ -171,7 +185,7 @@ void main(string[] argv)
 
 		string packag = args.argument("package");
 
-		PBI = parseTOML(packag);
+		PBI = parseTOML(readText(Path(packag)));
 		writeln(format("installing %s", [
 					PBI["meta"]["name"], PBI["meta"]["version"]
 				]));
@@ -220,13 +234,13 @@ void main(string[] argv)
 		{
 			auto defaultpath = environment.get("KPDIR", "/usr/local/bin"); 
 			cwriteln("cloning package...".color(fg.yellow));
-			string src = PBI["package"]["source"].toString();
-			string pkgn = PBI["meta"]["name"].toString();
+			src = PBI["package"]["source"].toString();
+			pkgn = PBI["meta"]["name"].toString();
 			tryRemovePath("/tmp/kpkg");
-			int pkgt = cast(int) PBI["meta"]["pkgt"].integer; 
-			int finalcmd;
-			string cmmd = PBI["package"]["command"].toString();
-			string finalbinal = PBI["package"]["finbin"].toString();
+			pkgt = cast(int) PBI["meta"]["pkgt"].integer; 
+			pkgv = PBI["meta"]["version"].floating;
+			cmmd = PBI["package"]["command"].toString();
+			finalbinal = PBI["package"]["finbin"].toString();
 			switch (pkgt)
 			{
 			case 0:
@@ -243,13 +257,6 @@ void main(string[] argv)
 				run(format("cd /tmp && tar -xvzf %s", strip(cmmd, "\u0022"))); 
 				finalcmd = tryRun(format("mv /tmp/%s /usr/local/bin/", strip(finalbinal, "\u0022"))); // need to figure out a way to get this to work for packages with multiple binaries...
 				break;
-				
-			case 2:
-				writeln(format("temp"));
-				break;
-			case 3:
-				writeln(format("temp"));
-				break;
 			case 4:
 				run(strip(cmmd, "\u0022"));
 				break;
@@ -265,6 +272,8 @@ void main(string[] argv)
 			if (finalcmd == 0)
 			{
 				cwriteln("program installed succesfully!".color(fg.green));
+				File packlist = File("/etc/kpkg/packagelist", "a+");
+				packlist.writeln(format("%s-%s", strip(pkgn, "\u0022"), pkgv));
 			}
 			else
 			{
@@ -274,7 +283,7 @@ void main(string[] argv)
 		}
 	}
 	if (args.hasFlag("remove")) {
-		string packoge = args.argument("package");
+		string packoge = strip(args.argument("package"), "\u0022");
 		string suudooo = runCollect("id -u");
 		if (strip(suudooo) == "0")
 		{
@@ -292,21 +301,21 @@ void main(string[] argv)
 			{
 
 			case "n":
-				cwriteln("canceling installation".color(fg.red)); 
+				cwriteln("canceling removal".color(fg.red)); 
 				exit = 1;
 				break;
 			case "no":
-				cwriteln("canceling installation".color(fg.red));
+				cwriteln("canceling removal".color(fg.red));
 				exit = 1;
 				break;
 			case "yes":
-				cwriteln("continuing installation".color(fg.green));
+				cwriteln("continuing removal".color(fg.green));
 				break;
 			case "y":
-				cwriteln("continuing installation".color(fg.green));
+				cwriteln("continuing removal".color(fg.green));
 				break;
 			default:
-				cwriteln("response not y or n, canceling installation".color(fg.red));
+				cwriteln("response not y or n, canceling removal".color(fg.red));
 				exit = 1;
 				break;
 			}
@@ -314,9 +323,100 @@ void main(string[] argv)
 		if (exit == 1) {
 			cwriteln("exiting...");
 		} else {
-		tryRemove(format("/usr/local/bin/%s", strip(packoge, "\u0022")));
-		cwriteln("program removed succesfully!".color(fg.green)); // line 244
+		tryRemove(format("/usr/local/bin/%s", packoge));
+		cwriteln("program removed succesfully!".color(fg.green)); // this is honestly quite rediculous just to remove ONE ITEM from an array when in the nim version it took like, two lines
+		string packlist = scriptlike.file.readText("/etc/kpkg/packagelist");
+		auto pakclist = packlist.splitter('\n').array;
+		string[string] semfinpck = abbrev(pakclist);
+		string finpck = semfinpck[packoge];  // spent an hour wondering why this gave me range violation errors only to realize i didnt have the package i was testing with installed
+		auto toremove = countUntil(pakclist ,finpck);
+		pakclist = pakclist.remove(toremove);
+		File pcklist = File("/etc/kpkg/packagelist", "w");
+		pcklist.write(join(pakclist, "\n"));
+
+		
 		}
 
 	}
+
+	if (args.hasFlag("update"))
+	{
+		if (scriptlike.file.exists("/etc/kpkg/packagelist")) {
+			if (scriptlike.file.exists("/etc/kpkg/repos")) {
+				auto repos = File("/etc/kpkg/repos");
+				auto packagelist = File("/etc/kpkg/packagelist");
+				auto packagelistByLine = packagelist.byLine();
+				auto reposByLine = repos.byLine();
+				if (exit == 1 ) {
+					writeln("exiting...");
+				} else {
+					foreach (line; packagelistByLine) {
+						foreach (lint; reposByLine) {
+							conteent = getContent(format(lint, "meta")).toString();
+							writeln(conteent);
+							PBIB = parseTOML(conteent);
+							string packagefound = PBIB["provides"].toString();
+							if (canFind(packagefound, line.strip("0123456789.-"))) {
+								uprepo = PBIB["url"].toString();
+								break;
+							}
+						}
+						PBI = parseTOML(getContent(format(strip(uprepo, "\u0022"), line.strip("01234565789.-"))).toString());
+						writeln(format("installing %s", PBI["meta"]["name"]));
+						cwriteln("cloning package...".color(fg.yellow));
+						src = PBI["package"]["source"].toString();
+						pkgn = PBI["meta"]["name"].toString();
+						tryRemovePath("/tmp/kpkg");
+
+						pkgt = cast(int) PBI["meta"]["pkgt"].integer;
+
+						pkgv = PBI["meta"]["version"].floating;
+						cmmd = PBI["package"]["command"].toString();
+						finalbinal = PBI["package"]["finbin"].toString();
+						switch (pkgt) {
+							case 0:
+								run(format("git clone %s /tmp/kpkg", strip(src, "\u0022")));
+								run(format("cd /tmp/kpkg && %s ", strip(cmmd, "\u0022")));
+								finalcmd = tryRun(format("mv /tmp/kpkg/%s /usr/local/bin/%s", strip(finalbinal, "\u0022"), strip(
+									pkgn, "\u0022")));
+								// if ANY of these fail the program dies
+								tryRemovePath("/tmp/kpkg"); // less scary
+
+								break;
+							case 1:
+								run(format("cd /tmp && wget %s", strip(src, "\u0022")));
+								run(format("cd /tmp && tar -xvzf %s", strip(cmmd, "\u0022"))); // todo: add support for tar.xz as well
+								finalcmd = tryRun(format("mv /tmp/%s /usr/local/bin/", strip(finalbinal, "\u0022")));
+								break;
+							case 2:
+								run(strip(cmmd, "\u0022"));
+								break;
+							case 3:
+								cwriteln("the package is broken and will not be installed".color(fg.red));
+								break;
+							default:
+								cwriteln("invalid package type".color(fg.red));
+								break;		
+						}
+
+						if (finalcmd == 0)
+						{
+							cwriteln("program installed succesfully!".color(fg.green));
+							repoconch ~= format("%s-%s", strip(pkgn, "\u0022"), pkgv);
+						}
+						else
+						{
+							cwriteln("Program installation failed! are you running as sudo?".color(fg.red));
+						}
+
+					}
+					File pcklist = File("/etc/kpkg/packagelist", "w");
+					pcklist.write(join(repoconch, "\n"));
+				}
+			}
+		}
+			
+	}
 }
+
+
